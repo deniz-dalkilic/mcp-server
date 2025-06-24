@@ -1,0 +1,10 @@
+services:
+  mcp-server:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      MCP_LOG_LEVEL: info
+      MCP_API_KEY: mylocalkey
+    volumes:
+      - ./:/usr/src/app
