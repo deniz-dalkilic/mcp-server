@@ -8,7 +8,9 @@ from typing import Any, Dict, List, Optional
 CROSSREF_API = "https://api.crossref.org/works"
 UA = "mcp-local-scholar/0.1 (+https://github.com/deniz-dalkilic/mcp-server)"
 
-# Data model
+# Module-level logger
+type_logger = logging.getLogger(__name__)
+
 @dataclass
 class Article:
     title: str
@@ -67,9 +69,80 @@ class ScholarTool:
         until_year: Optional[int] = None,
     ) -> List[Dict[str, Any]]:
         """
-        Stub implementation: just return an empty list.
+        Search CrossRef for peer-reviewed articles.
+
+        Parameters
+        ----------
+        query: Free-text search string.
+        max_results: Max number of items to return.
+        since_year: Inclusive start year filter.
+        until_year: Inclusive end year filter.
+
+        Returns
+        -------
+        List of article metadata dicts.
         """
-        return []
+        rows = max_results or self._max_results
+
+        # Construct filter list
+        filters: List[str] = []
+        if since_year:
+            filters.append(f"from-pub-date:{since_year}-01-01")
+        if until_year:
+            filters.append(f"until-pub-date:{until_year}-12-31")
+
+        params: Dict[str, Any] = {"query": query, "rows": rows}
+        if filters:
+            params["filter"] = ",".join(filters)
+
+        headers = {"User-Agent": UA, "Accept": "application/json"}
+
+        # Retry with exponential backoff
+        for attempt in range(3):
+            try:
+                resp = await self._client.get(CROSSREF_API, params=params, headers=headers)
+                resp.raise_for_status()
+                break
+            except httpx.HTTPError as exc:
+                type_logger.warning(
+                    "CrossRef request failed (attempt %d): %s", attempt + 1, exc
+                )
+                if attempt == 2:
+                    raise
+                await asyncio.sleep(2 ** attempt)
+
+        data = resp.json()
+        items = data.get("message", {}).get("items", [])
+
+        results: List[Dict[str, Any]] = []
+        for item in items:
+            art = self._parse_item(item)
+            results.append(art.to_dict())
+
+        # Polite delay
+        await asyncio.sleep(self._delay)
+        return results
+
+    def _parse_item(self, item: Dict[str, Any]) -> Article:
+        # Parse item JSON into Article
+        title_list = item.get("title", [])
+        journal_list = item.get("container-title", [])
+        authors = [
+            f"{a.get('family', '')}, {a.get('given', '')}" for a in item.get("author", [])
+        ]
+        year = None
+        issued = item.get("issued", {}).get("date-parts", [])
+        if issued and issued[0]:
+            year = issued[0][0]
+
+        return Article(
+            title=title_list[0] if title_list else "",
+            authors=authors,
+            journal=journal_list[0] if journal_list else "",
+            year=year,
+            doi=item.get("DOI", ""),
+            url=item.get("URL", ""),
+        )
 
     async def shutdown(self) -> None:
         # Close HTTP client on shutdown
