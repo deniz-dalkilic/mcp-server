@@ -1,0 +1,5 @@
+scholar_tool:
+  enabled: true
+  max_results: 10
+  polite_delay_ms: 1000
+  timeout_s: 10.0
