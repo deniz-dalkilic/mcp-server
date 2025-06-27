@@ -5,13 +5,14 @@ from app.main import app
 client = TestClient(app)
 
 def test_health_endpoint():
-    # health check
     response = client.get("/health")
     assert response.status_code == 200
     assert response.json() == {"status": "ok"}
 
-@pytest.mark.asyncio
-async def test_rpc_no_payload(monkeypatch):
-    # sample error test
+def test_rpc_no_payload():
+    # Empty JSON-RPC payload should return a JSON-RPC error object
     response = client.post("/rpc", json={})
-    assert response.status_code == 500
+    assert response.status_code == 200
+    body = response.json()
+    assert body.get("jsonrpc") == "2.0"
+    assert "error" in body
