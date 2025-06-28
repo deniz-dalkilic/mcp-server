@@ -1,10 +1,12 @@
+# docker-compose.yml
 services:
   mcp-server:
     build: .
+    entrypoint: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
     ports:
       - "8000:8000"
     environment:
-      MCP_LOG_LEVEL: info
-      MCP_API_KEY: mylocalkey
+      - MCP_LOG_LEVEL=info
+      - MCP_API_KEY=mylocalkey
     volumes:
       - ./:/usr/src/app
