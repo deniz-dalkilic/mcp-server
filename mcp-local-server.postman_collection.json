@@ -1,0 +1,49 @@
+{
+  "info": {
+    "name": "MCP Local Server",
+    "_postman_id": "a1b2c3d4-e5f6-7890-abcd-ef0123456789",
+    "description": "Collection for MCP Local Server endpoints",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8000/health",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8000",
+          "path": ["health"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "RPC: scholar.search_articles",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"id\": 1,\n  \"method\": \"scholar.search_articles\",\n  \"params\": {\n    \"query\": \"analytical chemistry\",\n    \"max_results\": 3,\n    \"since_year\": 2022\n  }\n}"
+        },
+        "url": {
+          "raw": "http://localhost:8000/rpc",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8000",
+          "path": ["rpc"]
+        }
+      },
+      "response": []
+    }
+  ]
+}
